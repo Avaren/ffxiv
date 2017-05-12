@@ -290,7 +290,7 @@ def parse_free_company(html):
     #                         icon=f.get('src')))
 
     estate_name = tree.find("p[@class='freecompany__estate__name']")
-    if estate_name:
+    if estate_name is not None:
         greeting = tree.find("p[@class='freecompany__estate__greeting']").text_content()
         estate = {
             'name': estate_name.text,
