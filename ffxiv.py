@@ -3,6 +3,7 @@ import functools
 import logging
 import re
 
+import itertools
 import lxml.html
 
 log = logging.getLogger(__name__)
@@ -11,12 +12,15 @@ log = logging.getLogger(__name__)
 BASE_URL = 'http://eu.finalfantasyxiv.com/lodestone'
 
 FFXIV_CLASSES = [
-    ('Disciples of War', ['Gladiator', 'Pugilist', 'Marauder', 'Lancer', 'Archer', 'Rogue']),
+    ('Tank', ['Paladin', 'Gladiator', 'Warrior', 'Marauder', 'Dark Knight']),
+    ('Healer', ['White Mage', 'Conjurer', 'Scholar', 'Astrologian']),
+    ('Melee DPS', ['Monk', 'Pugilist', 'Dragoon', 'Lancer', 'Ninja', 'Rogue', 'Samurai']),
+    ('Physical Ranged DPS', ['Bard', 'Archer', 'Machinist']),
+    ('Magical Ranged DPS', ['Black Mage', 'Thaumaturge', 'Summoner', 'Arcanist', 'Red Mage']),
+    ('Disciples of the Land', ['Miner', 'Botanist', 'Fisher']),
     ('Disciples of the Hand',
      ['Carpenter', 'Blacksmith', 'Armorer', 'Goldsmith', 'Leatherworker', 'Weaver', 'Alchemist', 'Culinarian']),
-    ('Disciples of Magic', ['Conjurer', 'Thaumaturge', 'Arcanist']),
-    ('Disciples of the Land', ['Miner', 'Botanist', 'Fisher']),
-    ('Extra Jobs', ['Dark Knight', 'Machinist', 'Astrologian', ]),
+
 ]
 
 ARM_PREFIXES = ['Two-handed ', 'One-handed ', "'s Arm", "'s Primary Tool", "'s Grimoire"]
@@ -97,29 +101,32 @@ def parse_character(html):
     except (AttributeError, IndexError):
         free_company = None
 
-    class_items = data.find(".//div[@class='character__profile__data']").findall(
-        ".//div[@class='character__level__list']//li")
+    class_items = itertools.chain.from_iterable(n.findall(".//ul[@class='character__job clearfix']/li")
+                   for n in data.findall(".//div[@class='character__job__role']"))
 
     # Classes
     classes = {}
     for class_item in class_items:
-        cls = class_item.find('.//img').attrib['data-tooltip']
+        try:
+            cls = class_item.xpath("./div[contains(@class, 'character__job__name')]")[0].text_content().strip()
 
-        if not cls:
-            continue
+            if not cls:
+                continue
 
-        level = class_item.text_content().strip()
+            level = class_item.find("./div[@class='character__job__level']").text_content().strip()
 
-        # if level == '-':
-        #     level = 0
-        #     # exp = 0
-        #     # exp_next = 0
-        # else:
-        level = 0 if level == '-' else int(level)
-        # exp = int(tag.next_sibling.next_sibling.next_sibling.next_sibling.text.split(' / ')[0])
-        # exp_next = int(tag.next_sibling.next_sibling.next_sibling.next_sibling.text.split(' / ')[1])
+            # if level == '-':
+            #     level = 0
+            #     # exp = 0
+            #     # exp_next = 0
+            # else:
+            level = 0 if level == '-' else int(level)
+            # exp = int(tag.next_sibling.next_sibling.next_sibling.next_sibling.text.split(' / ')[0])
+            # exp_next = int(tag.next_sibling.next_sibling.next_sibling.next_sibling.text.split(' / ')[1])
 
-        classes[cls] = dict(level=level)
+            classes[cls] = dict(level=level)
+        except:
+            print(lxml.html.tostring(class_item))
 
     # Stats
     stats = {}
