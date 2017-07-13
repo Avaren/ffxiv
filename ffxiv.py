@@ -311,8 +311,8 @@ def parse_free_company(html):
         ranking_week, ranking_month = tree.findall(
             ".//table[@class='character__ranking__data parts__space--reset']//th")
         ranking = {
-            'week': re.findall('(\d+)', ranking_week.text)[0],
-            'month': re.findall('(\d+)', ranking_month.text)[0],
+            'week': '--' if '--' in ranking_week.text else re.findall('(\d+)', ranking_week.text)[0],
+            'month': '--' if '--' in ranking_month.text else re.findall('(\d+)', ranking_month.text)[0],
         }
     except:
         pass
